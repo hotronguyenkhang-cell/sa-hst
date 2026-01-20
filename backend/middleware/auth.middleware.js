@@ -3,7 +3,7 @@
  */
 
 import jwt from 'jsonwebtoken';
-import prisma from '../prisma/client.js';
+import { UserServiceDB } from '../services/firestore.service.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret-key';
 
 export const auth = async (req, res, next) => {
@@ -15,9 +15,7 @@ export const auth = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await prisma.user.findUnique({
-            where: { id: decoded.id }
-        });
+        const user = await UserServiceDB.get(decoded.id);
 
         if (!user) {
             throw new Error();
