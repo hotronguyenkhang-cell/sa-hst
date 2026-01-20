@@ -6,12 +6,23 @@
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin if not already initialized
+// Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
     try {
-        admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-        });
+        // Check if we have credentials in env
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+            });
+        } else {
+            console.warn('⚠️ No FIREBASE_SERVICE_ACCOUNT found. Trying accessible-by-default init (may fail on non-GCP).');
+            admin.initializeApp({
+                credential: admin.credential.applicationDefault(),
+                storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+            });
+        }
     } catch (error) {
         console.error('Firebase Admin Initialization Error:', error);
     }
