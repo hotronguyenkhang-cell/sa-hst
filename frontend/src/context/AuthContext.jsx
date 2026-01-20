@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '../api/hooks';
 
 const AuthContext = createContext();
 
@@ -10,30 +10,20 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // Configure API headers
+            // Note: api interceptors in hooks.js should handle this, 
+            // but we need to ensure token is set if we were using axios defaults.
+            // For now, let's rely on hooks.js interceptor which reads from localStorage.
             fetchUser(token);
         } else {
             setLoading(false);
         }
-
-        // Interceptor for 401
-        const interceptor = axios.interceptors.response.use(
-            (response) => response,
-            (error) => {
-                if (error.response?.status === 401) {
-                    logout();
-                }
-                return Promise.reject(error);
-            }
-        );
-
-        return () => axios.interceptors.response.eject(interceptor);
     }, [token]);
 
 
     const fetchUser = async () => {
         try {
-            const res = await axios.get('http://localhost:3000/api/auth/me');
+            const res = await api.get('/auth/me');
             setUser(res.data.data);
         } catch (error) {
             logout();
@@ -43,12 +33,20 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = async (email, password) => {
-        const res = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+        const res = await api.post('/auth/login', { email, password });
         const { user, token } = res.data.data;
         setUser(user);
         setToken(token);
         localStorage.setItem('token', token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        return user;
+    };
+
+    const register = async (email, password, name) => {
+        const res = await api.post('/auth/register', { email, password, name });
+        const { user, token } = res.data.data;
+        setUser(user);
+        setToken(token);
+        localStorage.setItem('token', token);
         return user;
     };
 
@@ -56,11 +54,10 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken(null);
         localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

@@ -6,21 +6,28 @@ import { toast } from 'react-hot-toast';
 import './LoginPage.css';
 
 const LoginPage = () => {
+    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { login } = useAuth();
+    const { login, register } = useAuth(); // Assuming useAuth exposes register
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await login(email, password);
-            toast.success('Đăng nhập thành công!');
+            if (isLogin) {
+                await login(email, password);
+                toast.success('Đăng nhập thành công!');
+            } else {
+                await register(email, password, name);
+                toast.success('Đăng ký thành công!');
+            }
             navigate('/');
         } catch (error) {
-            toast.error('Email hoặc mật khẩu không chính xác');
+            toast.error(error.message || (isLogin ? 'Đăng nhập thất bại' : 'Đăng ký thất bại'));
         } finally {
             setIsSubmitting(false);
         }
@@ -34,10 +41,26 @@ const LoginPage = () => {
                         <Shield size={32} />
                     </div>
                     <h1>SA-HST Dashboard</h1>
-                    <p>Hệ thống Phân Tích & Quản Lý Hồ Sơ Thầu</p>
+                    <p>{isLogin ? 'Đăng nhập hệ thống' : 'Tạo tài khoản mới'}</p>
                 </div>
 
                 <form className="login-form" onSubmit={handleSubmit}>
+                    {!isLogin && (
+                        <div className="form-group">
+                            <label>Họ tên</label>
+                            <div className="input-wrapper">
+                                <Shield size={18} />
+                                <input
+                                    type="text"
+                                    className="glass-input"
+                                    placeholder="Nguyễn Văn A"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required={!isLogin}
+                                />
+                            </div>
+                        </div>
+                    )}
                     <div className="form-group">
                         <label>Email</label>
                         <div className="input-wrapper">
@@ -69,11 +92,11 @@ const LoginPage = () => {
                     </div>
 
                     <button type="submit" className="btn-premium login-btn" disabled={isSubmitting}>
-                        {isSubmitting ? 'Đang xử lý...' : 'Đăng Nhập'} <LogIn size={18} />
+                        {isSubmitting ? 'Đang xử lý...' : (isLogin ? 'Đăng Nhập' : 'Đăng Ký')} <LogIn size={18} />
                     </button>
 
-                    <div className="login-hint">
-                        <p>Dùng tài khoản đã được cấp bởi quản trị viên hệ thống.</p>
+                    <div className="login-hint mt-4 text-center cursor-pointer hover:text-primary transition-colors" onClick={() => setIsLogin(!isLogin)}>
+                        <p>{isLogin ? "Chưa có tài khoản? Đăng ký ngay" : "Đã có tài khoản? Đăng nhập"}</p>
                     </div>
                 </form>
 
