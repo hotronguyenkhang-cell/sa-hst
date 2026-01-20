@@ -1,0 +1,20 @@
+# Render Deployment Configuration
+
+services:
+  # Web Service for Backend
+  - type: web
+    name: tender-analysis-backend
+    env: node
+    plan: free # Sử dụng gói Free Tier
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GOOGLE_API_KEY
+        sync: false # Sẽ nhập tay trên Dashboard Render để bảo mật
+      - key: FIREBASE_STORAGE_BUCKET
+        value: xd-hst.firebasestorage.app
+      - key: STORAGE_PROVIDER
+        value: firebase
+    autoDeploy: false # Tắt auto-deploy để tránh build thừa khi chưa push code

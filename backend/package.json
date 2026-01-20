@@ -1,0 +1,62 @@
+{
+  "name": "tender-analysis-backend",
+  "version": "1.0.0",
+  "description": "AI-powered tender document analysis backend",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "test": "jest",
+    "test:api": "jest --testPathPattern=tests/api",
+    "test:integration": "jest --testPathPattern=tests/integration"
+  },
+  "keywords": [
+    "tender",
+    "ai",
+    "ocr",
+    "analysis"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.12.0",
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^5.7.1",
+    "bcryptjs": "^3.0.3",
+    "bull": "^4.12.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.3",
+    "helmet": "^7.1.0",
+    "jimp": "^0.22.10",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.24.1",
+    "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.3",
+    "redis": "^4.6.12",
+    "sharp": "^0.33.1",
+    "tesseract.js": "^5.0.4",
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "prisma": "^5.7.1",
+    "supertest": "^6.3.3"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}

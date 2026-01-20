@@ -1,0 +1,15 @@
+{
+  "name": "sa-hst",
+  "version": "1.0.0",
+  "description": "Hệ thống phân tích hồ sơ thầu thông minh sử dụng công nghệ AI",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "firebase-tools": "^15.3.1"
+  }
+}

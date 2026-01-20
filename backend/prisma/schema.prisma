@@ -1,0 +1,431 @@
+// Prisma Schema for Tender Analysis System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentType {
+  ONLINE_WIDE       // Đấu Online rộng rãi
+  ONLINE_COMPETITIVE // Online cạnh tranh
+  ONLINE_URGENT     // Online Mua khẩn (khẩn cấp)
+}
+
+enum WorkflowStage {
+  PRE_FEASIBILITY      // Đánh giá sơ bộ
+  TECHNICAL_EVALUATION // Đánh giá kỹ thuật
+  FINANCIAL_EVALUATION // Đánh giá tài chính/giá
+  FINAL_APPROVAL       // Phê duyệt cuối cùng
+  COMPLETED            // Hoàn thành
+}
+
+
+enum ProcessingStatus {
+  PENDING
+  UPLOADING
+  OCR_PROCESSING
+  AI_ANALYZING
+  COMPLETED
+  FAILED
+}
+
+enum Department {
+  PROCUREMENT  // Mua hàng
+  TECHNICAL    // Kĩ thuật
+  MIXED        // Cả hai
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Role {
+  ADMIN
+  TECHNICAL
+  PROCUREMENT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed
+  name      String
+  role      Role     @default(TECHNICAL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedTenders     TenderDocument[] @relation("Assignee")
+  assignedTendersTech TenderDocument[] @relation("AssigneeTech")
+  assignedTendersProc TenderDocument[] @relation("AssigneeProc")
+  uploadedTenders     TenderDocument[] @relation("Uploader")
+
+}
+
+
+model TenderDocument {
+  id                String            @id @default(uuid())
+  title             String?
+  vendorName        String?           // Tên nhà thầu
+  originalFileName  String
+
+  totalPages        Int
+  fileSize          Int
+  mimeType          String
+  storagePath       String
+  
+  // Processing
+  status            ProcessingStatus  @default(PENDING)
+  processingProgress Float            @default(0) // 0-100
+  errorMessage      String?
+  
+  // Classification Results
+  documentType      DocumentType?
+  finalReviewer     String?           // Người xét duyệt cuối cùng
+  department        Department?
+  
+  // Feasibility Metrics (Tiền khả thi)
+  feasibilityScore  Float?            // 0-100
+  winProbability    Float?            // Tỉ lệ thắng (0-100%)
+  opportunityLevel  String?           // High/Medium/Low
+  
+  // AI Provider Used
+  aiProvider        String?           // openai, gemini, claude
+  ocrProvider       String?           // tesseract, google-vision
+  
+  // Timestamps
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  completedAt       DateTime?
+  
+  // Workflow Management
+  workflowStage     WorkflowStage     @default(PRE_FEASIBILITY)
+  isTechLocked      Boolean           @default(false)
+  isProcLocked      Boolean           @default(false)
+  estimatedBudget   Float?            // Ngân sách dự kiến/giá gói thầu
+
+  
+  // Relations
+  pages             DocumentPage[]
+  analysis          Analysis?
+  riskAssessments   RiskAssessment[]
+  complianceItems   ComplianceItem[]
+  lineItems         TenderLineItem[]
+  similarDocuments  SimilarDocument[] @relation("SourceDocument")
+  
+  // New Step Relations
+  preFeasibility    PreFeasibilityEvaluation?
+  technicalEval     TechnicalEvaluation?
+  financialEval     FinancialEvaluation?
+  scoringConfig     ScoringConfig?
+  approvalRequests  ApprovalRequest[]
+  biddingConfig     BiddingConfig?
+
+  // Assignment & Ownership
+  uploaderId        String?
+  uploader          User?             @relation("Uploader", fields: [uploaderId], references: [id])
+  assigneeId        String?
+  assignee          User?             @relation("Assignee", fields: [assigneeId], references: [id])
+  
+  // Dynamic Criteria & Dept Assignment (Phase 9)
+  techCriteria      Json?             // List of { id, label, weight, description }
+  procCriteria      Json?             // List of { id, label, weight, description }
+  assigneeTechId    String?
+  assigneeTech      User?             @relation("AssigneeTech", fields: [assigneeTechId], references: [id])
+  assigneeProcId    String?
+  assigneeProc      User?             @relation("AssigneeProc", fields: [assigneeProcId], references: [id])
+
+
+
+
+  
+  @@index([status])
+  @@index([documentType])
+  @@index([createdAt])
+}
+
+model DocumentPage {
+  id              String          @id @default(uuid())
+  documentId      String
+  pageNumber      Int
+  imagePath       String
+  
+  // OCR Results
+  extractedText   String?
+  ocrConfidence   Float?          // 0-1
+  ocrProcessedAt  DateTime?
+  
+  // Relations
+  document        TenderDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+}
+
+model Analysis {
+  id              String          @id @default(uuid())
+  documentId      String          @unique
+  
+  // Raw AI Response
+  rawResponse     Json
+  
+  // Parsed Results
+  classification  Json?           // Document type và reasoning
+  reviewer        Json?           // Final reviewer info
+  feasibility     Json?           // Feasibility metrics breakdown
+  opportunities   Json?           // Opportunities identified
+  departmentInfo  Json?           // Department classification details
+  
+  // Metadata
+  promptVersion   String
+  tokensUsed      Int?
+  processingTime  Float?          // seconds
+  confidence      Float?          // Overall confidence 0-100
+  
+  createdAt       DateTime        @default(now())
+  
+  // Relations
+  document        TenderDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model RiskAssessment {
+  id              String          @id @default(uuid())
+  documentId      String
+  
+  riskType        String          // e.g., "Timeline Risk", "Budget Risk", "Compliance Risk"
+  riskLevel       RiskLevel
+  description     String
+  mitigation      String?         // Suggested mitigation
+  impact          String?         // Potential impact
+  
+  createdAt       DateTime        @default(now())
+  
+  // Relations
+  document        TenderDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  @@index([documentId])
+  @@index([riskLevel])
+}
+
+model SimilarDocument {
+  id                    String          @id @default(uuid())
+  sourceDocumentId      String
+  similarDocumentId     String?         // Can be null if it's a historical reference
+  
+  similarityScore       Float           // 0-100
+  matchingCriteria      Json            // What makes them similar
+  
+  // Historical data if not linked to existing document
+  historicalTitle       String?
+  historicalType        DocumentType?
+  historicalOutcome     Json?           // Success rate, score breakdown
+  
+  createdAt             DateTime        @default(now())
+  
+  // Relations
+  sourceDocument        TenderDocument  @relation("SourceDocument", fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  
+  @@index([sourceDocumentId])
+  @@index([similarityScore])
+}
+
+model Settings {
+  id              String          @id @default(uuid())
+  key             String          @unique
+  value           Json
+  description     String?
+  updatedAt       DateTime        @updatedAt
+}
+
+model ActivityLog {
+  id              String          @id @default(uuid())
+  action          String
+  entityType      String          // TenderDocument, Analysis, etc.
+  entityId        String?
+  details         Json?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime        @default(now())
+  
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model ComplianceItem {
+  id          String   @id @default(uuid())
+  documentId  String
+  category    String   // TECHNICAL, JURIDICAL, FINANCIAL
+  requirement String
+  status      String   // MET, NOT_MET, UNKNOWN
+  description String?
+  isManual    Boolean  @default(false)
+
+  
+  // Relations
+  document    TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model TenderLineItem {
+  id              String   @id @default(uuid())
+  documentId      String
+  name            String   // Tên hạng mục / công việc
+  unit            String?  // Đơn vị tính
+  quantity        Float?   // Số lượng
+  estimatedPrice  Float?   // Đơn giá đề xuất / kế hoạch
+  totalPrice      Float?   // Thành tiền
+  notes           String?
+  isManual        Boolean  @default(false)
+
+  
+  // Relations
+  document        TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model PreFeasibilityEvaluation {
+  id              String         @id @default(uuid())
+  documentId      String         @unique
+  legalPass       Boolean        @default(false)
+  bidBondPass     Boolean        @default(false)
+  financePass     Boolean        @default(false)
+  overallPass     Boolean        @default(false)
+  notes           String?
+  evaluatedAt     DateTime?
+  document        TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model TechnicalEvaluation {
+  id              String         @id @default(uuid())
+  documentId      String         @unique
+  score           Float?
+  maxScore        Float          @default(100)
+  criteria        Json?          // Specific tech criteria scores
+  comments        String?
+  document        TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model FinancialEvaluation {
+  id              String         @id @default(uuid())
+  documentId      String         @unique
+  score           Float?
+  maxScore        Float          @default(100)
+  commercialTerms String?
+  paymentTerms    String?
+  warrantyTerms   String?
+  priceScore      Float?
+  document        TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model ScoringConfig {
+  id              String         @id @default(uuid())
+  documentId      String         @unique
+  techWeight      Float          @default(0.4) // 40%
+  personnelWeight Float          @default(0.2) // 20%
+  experienceWeight Float         @default(0.4) // 40%
+  priceWeight     Float          @default(0.0) // If combined scoring
+  document        TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalRequest {
+  id              String         @id @default(uuid())
+  documentId      String
+  approverId      String?        // Target user
+  approverRole    String?        // CEO, CFO, etc.
+  status          String         @default("PENDING") // PENDING, APPROVED, REJECTED
+  comments        String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  document        TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+
+model BiddingConfig {
+  id                String         @id @default(uuid())
+  documentId        String         @unique
+  riskPremiumPercent Float         @default(0)
+  profitMarginPercent Float        @default(0)
+  adminFees         Float          @default(0)
+  otherFees         Float          @default(0)
+  totalAdjustedBid  Float?
+  notes             String?
+  updatedAt         DateTime       @updatedAt
+  document          TenderDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+// --- Company Profile (Phase 10) ---
+
+model CompanyProfile {
+  id              String             @id @default(uuid())
+  name            String
+  taxCode         String?            @unique
+  address         String?
+  website         String?
+  industry        String?
+  description     String?
+  logoPath        String?
+  
+  finances        CompanyFinance[]
+  personnel       CompanyPersonnel[]
+  experience      CompanyExperience[]
+  
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model CompanyFinance {
+  id              String          @id @default(uuid())
+  companyId       String
+  year            Int
+  revenue         Float           // Doanh thu
+  profit          Float           // Lợi nhuận
+  netWorth        Float           // Tài sản ròng
+  creditLimit     Float?          // Hạn mức tín dụng
+  reportPath      String?         // PDF báo cáo tài chính
+  
+  company         CompanyProfile  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@unique([companyId, year])
+}
+
+model CompanyPersonnel {
+  id              String          @id @default(uuid())
+  companyId       String
+  name            String
+  position        String
+  yearsOfExp      Int             @default(0)
+  certifications  Json?           // List of strings/objects
+  cvPath          String?
+  
+  company         CompanyProfile  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime        @default(now())
+}
+
+model CompanyExperience {
+  id              String          @id @default(uuid())
+  companyId       String
+  projectTitle    String
+  clientName      String
+  value           Float
+  completionDate  DateTime?
+  description     String?
+  evidencePath    String?         // PDF Hợp đồng/Biên bản nghiệm thu
+  
+  company         CompanyProfile  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime        @default(now())
+}

@@ -1,0 +1,175 @@
+.analytics-page {
+    padding: var(--spacing-10) 0;
+    min-height: 100vh;
+}
+
+.analytics-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-10);
+}
+
+.analytics-summary-card {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-100);
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-8);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-6);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.analytics-summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.card-primary .card-icon {
+    background: var(--gradient-primary);
+}
+
+.card-success .card-icon {
+    background: var(--gradient-success);
+}
+
+.card-info .card-icon {
+    background: var(--color-primary-start);
+}
+
+.card-info h3 {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    margin: 0;
+}
+
+.card-info .label {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin: 4px 0;
+}
+
+.card-info .sub-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-400);
+    margin: 0;
+}
+
+/* Charts Row */
+.charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-10);
+}
+
+.chart-container {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-gray-100);
+}
+
+.chart-header h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    margin: 0 0 var(--spacing-6) 0;
+    color: var(--color-gray-800);
+}
+
+/* Vendor Board */
+.vendor-section {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-gray-100);
+}
+
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.analytics-table th {
+    text-align: left;
+    padding: var(--spacing-4);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-gray-400);
+    border-bottom: 2px solid var(--color-gray-50);
+}
+
+.analytics-table td {
+    padding: var(--spacing-5) var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-50);
+    font-size: var(--font-size-sm);
+}
+
+.vendor-name {
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-gray-900);
+}
+
+.win-rate-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: bold;
+    color: var(--color-success);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    width: fit-content;
+}
+
+.mini-progress-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mini-progress {
+    height: 6px;
+    background: var(--color-gray-100);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.mini-progress .fill {
+    height: 100%;
+    background: var(--gradient-primary);
+}
+
+.probability-val {
+    font-weight: 800;
+    color: var(--color-primary-start);
+    font-size: var(--font-size-lg);
+}
+
+@media (max-width: 1024px) {
+    .analytics-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-row {
+        grid-template-columns: 1fr;
+    }
+}

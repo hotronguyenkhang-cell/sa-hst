@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper to check for specific roles (requires Custom Claims or lookups)
+    // For Spark plan simple implementation, we often rely on basic Auth
+    
+    // Tenders Collection
+    match /tenders/{tenderId} {
+      // Allow read/list: If authenticated (and refined by query in backend)
+      // Note: Client-side rules need to be strict. Backend (Admin SDK) bypasses these.
+      allow read: if isAuthenticated();
+      
+      // Allow create: If authenticated
+      allow create: if isAuthenticated();
+      
+      // Allow update/delete: Only owner or if role is appropriate (simplified for now)
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId; // Users manage their own profile
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
